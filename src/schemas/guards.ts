@@ -30,7 +30,12 @@ function isArrayOf<T>(value: unknown, guard: (item: unknown) => item is T): valu
 }
 
 export function isSwotItem(value: unknown): value is SwotItem {
-  return isRecord(value) && isNonEmptyString(value.point) && isNonEmptyString(value.example);
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.point) &&
+    isNonEmptyString(value.example) &&
+    (value.source === undefined || value.source === 'photo' || value.source === 'guess')
+  );
 }
 
 function isHardWord(value: unknown): value is HardWord {
@@ -52,7 +57,29 @@ export function isSwotResult(value: unknown): value is SwotResult {
     isSwotItemList(value.opportunities) &&
     isSwotItemList(value.threats) &&
     isNonEmptyString(value.summary) &&
-    isArrayOf(value.hardWords, isHardWord)
+    isArrayOf(value.hardWords, isHardWord) &&
+    (value.photoClues === undefined || isArrayOf(value.photoClues, isNonEmptyString))
+  );
+}
+
+const QUADRANT_FIELDS = ['strengths', 'weaknesses', 'opportunities', 'threats'] as const;
+
+/**
+ * 사진 분석 응답. 가게 사진이 아니면 { isStore: false }만 와도 되고,
+ * 가게 사진이면 SWOT 전체 + 사진 단서 + 모든 항목의 근거(source)가 있어야 한다.
+ * 근거 표시는 이 기능의 핵심(본 것과 짐작을 나누기)이라 빠지면 다시 요청한다.
+ */
+export type PhotoResponse = { isStore: false; reason: string } | (SwotResult & { isStore: true; photoClues: string[] });
+
+export function isPhotoResponse(value: unknown): value is PhotoResponse {
+  if (!isRecord(value)) return false;
+  if (value.isStore === false) return typeof value.reason === 'string';
+  return (
+    value.isStore === true &&
+    isSwotResult(value) &&
+    isArrayOf(value.photoClues, isNonEmptyString) &&
+    value.photoClues.length > 0 &&
+    QUADRANT_FIELDS.every((field) => value[field].every((item) => item.source !== undefined))
   );
 }
 

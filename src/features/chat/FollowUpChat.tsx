@@ -15,8 +15,12 @@ interface FollowUpChatProps {
 }
 
 function suggestionsFor(analysis: Analysis): string[] {
-  const when = analysis.kind === 'single' ? '이 회사는 언제 생겼어요?' : '두 회사는 언제 생겼어요?';
-  return ['기회를 더 잘 쓰려면 어떻게 해요?', '조심할 점은 어떻게 막아요?', when];
+  let third = '두 회사는 언제 생겼어요?';
+  if (analysis.kind === 'single') {
+    // 사진으로 분석한 동네 가게는 "언제 생겼는지" 알기 어려우므로 가게에 맞는 질문을 준다.
+    third = analysis.result.photoClues ? '손님이 더 많이 오려면 어떻게 해요?' : '이 회사는 언제 생겼어요?';
+  }
+  return ['기회를 더 잘 쓰려면 어떻게 해요?', '조심할 점은 어떻게 막아요?', third];
 }
 
 export function FollowUpChat({ apiKey, analysis, useSearch, onGoToKeySetup }: FollowUpChatProps) {

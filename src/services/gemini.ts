@@ -1,13 +1,24 @@
-import { ApiError, GoogleGenAI, type Content, type GenerateContentConfig, type GenerateContentResponse, type Schema } from '@google/genai';
+import {
+  ApiError,
+  createPartFromBase64,
+  GoogleGenAI,
+  type ContentListUnion,
+  type Content,
+  type GenerateContentConfig,
+  type GenerateContentResponse,
+  type Schema,
+} from '@google/genai';
 import { GEMINI_MODEL, MAX_CHAT_TURNS, THINKING_LEVEL } from '../config';
 import { buildChatSystemPrompt } from '../prompts/chatPrompt';
 import { buildComparePrompt } from '../prompts/comparePrompt';
 import { buildIntentPrompt } from '../prompts/intentPrompt';
+import { buildPhotoPrompt } from '../prompts/photoPrompt';
 import { buildPracticePrompt } from '../prompts/practicePrompt';
 import { buildSwotPrompt } from '../prompts/swotPrompt';
 import { SYSTEM_RULES } from '../prompts/systemRules';
 import {
   isCompareResult,
+  isPhotoResponse,
   isPracticeFeedback,
   isRawIntent,
   isSwotResult,
@@ -16,6 +27,7 @@ import {
 import {
   compareResultSchema,
   intentSchema,
+  photoSwotSchema,
   practiceFeedbackSchema,
   swotResultSchema,
 } from '../schemas/responseSchemas';
@@ -25,6 +37,7 @@ import type {
   CompareResult,
   FriendlyError,
   IntentResult,
+  PhotoInput,
   PracticeFeedback,
   PracticeInput,
   Source,
@@ -44,6 +57,14 @@ export class InvalidResponseError extends Error {
   constructor() {
     super('AI 응답 형식이 올바르지 않아요.');
     this.name = 'InvalidResponseError';
+  }
+}
+
+/** 가게 사진이 아닌 사진을 보냈을 때 */
+export class NotStoreError extends Error {
+  constructor() {
+    super('가게 사진이 아니에요.');
+    this.name = 'NotStoreError';
   }
 }
 
@@ -96,7 +117,7 @@ interface JsonResult<T> {
  */
 async function generateJson<T>(
   apiKey: string,
-  prompt: string,
+  prompt: ContentListUnion,
   schema: Schema,
   guard: (value: unknown) => value is T,
   options: CallOptions = {},
@@ -184,6 +205,42 @@ export async function analyzeTwo(
     options,
   );
   return { kind: 'compare', result: data, sources };
+}
+
+/**
+ * 가게 사진 한 장으로 SWOT를 분석한다.
+ * 사진(이미 브라우저에서 줄이고 위치 정보를 지운 JPEG)과 지시문을 한 user 메시지에 함께 담는다.
+ * 사진은 이 요청에만 쓰이고 앱 어디에도 저장하지 않는다.
+ */
+export async function analyzePhoto(
+  apiKey: string,
+  photo: PhotoInput,
+  options: CallOptions = {},
+): Promise<Analysis> {
+  const contents: Content[] = [
+    {
+      role: 'user',
+      parts: [
+        createPartFromBase64(photo.imageBase64, photo.mimeType),
+        { text: buildPhotoPrompt(photo.storeName, photo.note) },
+      ],
+    },
+  ];
+  const { data, sources } = await generateJson(apiKey, contents, photoSwotSchema, isPhotoResponse, options);
+  if (!data.isStore) throw new NotStoreError();
+  // 화면·기록에는 SWOT 결과 모양만 남긴다(isStore·reason 같은 판별용 칸은 버린다).
+  const result: SwotResult = {
+    company: data.company,
+    oneLineIntro: data.oneLineIntro,
+    strengths: data.strengths,
+    weaknesses: data.weaknesses,
+    opportunities: data.opportunities,
+    threats: data.threats,
+    summary: data.summary,
+    hardWords: data.hardWords,
+    photoClues: data.photoClues,
+  };
+  return { kind: 'single', result, sources };
 }
 
 export async function coachPractice(apiKey: string, input: PracticeInput): Promise<PracticeFeedback> {
@@ -287,6 +344,7 @@ export const FRIENDLY_MESSAGES = {
   rateLimit: 'AI가 잠깐 쉬고 있어요. 1분 뒤에 다시 해 봐요 ⏳',
   network: '인터넷이 잘 안 되는 것 같아요 📶',
   invalidResponse: 'AI의 답이 조금 이상하게 왔어요. 다시 해 볼까요? 🔄',
+  notStore: '가게 사진이 아닌 것 같아요. 가게의 겉모습이나 안쪽이 보이는 사진을 넣어 주세요 🏪',
 } as const;
 
 /**
@@ -295,6 +353,9 @@ export const FRIENDLY_MESSAGES = {
  * 섞여 있을 수 있어, 키가 화면이나 로그에 새지 않게 하기 위해서다.
  */
 export function toFriendlyError(error: unknown): FriendlyError {
+  if (error instanceof NotStoreError) {
+    return { kind: 'notStore', message: FRIENDLY_MESSAGES.notStore };
+  }
   if (error instanceof InvalidResponseError) {
     return { kind: 'invalidResponse', message: FRIENDLY_MESSAGES.invalidResponse };
   }

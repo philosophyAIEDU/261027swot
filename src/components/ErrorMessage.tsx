@@ -15,7 +15,8 @@ export function ErrorMessage({ error, onRetry, onGoToKeySetup }: ErrorMessagePro
         {error.kind === 'badKey' && onGoToKeySetup && (
           <Button onClick={onGoToKeySetup}>🔑 키 설정 화면으로 가기</Button>
         )}
-        {error.kind !== 'badKey' && onRetry && (
+        {/* 가게 사진이 아니라는 오류는 같은 사진으로 다시 해 봐야 소용없으므로 다시 시도 버튼을 숨긴다. */}
+        {error.kind !== 'badKey' && error.kind !== 'notStore' && onRetry && (
           <Button variant="secondary" onClick={onRetry}>
             🔄 다시 시도
           </Button>

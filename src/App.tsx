@@ -18,10 +18,11 @@ import { RecentList } from './features/history/RecentList';
 import { useHistory } from './features/history/useHistory';
 import { SwotGuide } from './features/intro/SwotGuide';
 import { SwotIntroCard } from './features/intro/SwotIntroCard';
+import { PhotoUpload } from './features/photo/PhotoUpload';
 import { PracticeBoard } from './features/practice/PracticeBoard';
 import { usePreferences } from './hooks/usePreferences';
 
-type View = 'home' | 'keySetup' | 'practice';
+type View = 'home' | 'keySetup' | 'practice' | 'photo';
 
 export default function App() {
   const preferences = usePreferences();
@@ -37,6 +38,12 @@ export default function App() {
   }, [analysis]);
 
   const goToKeySetup = useCallback(() => setView('keySetup'), []);
+
+  // 사진 화면으로 갈 때는 글로 찾던 결과를 지워, 사진 결과와 섞여 보이지 않게 한다.
+  const openPhoto = useCallback(() => {
+    analysis.reset();
+    setView('photo');
+  }, [analysis]);
 
   const handleKeySubmit = useCallback(
     async (key: string, remember: boolean) => {
@@ -95,6 +102,59 @@ export default function App() {
 
   const { state } = analysis;
 
+  // 글로 찾기와 사진으로 찾기가 똑같이 쓰는 결과 영역(로딩·오류·결과·추가 질문)
+  const statusArea = (
+    <>
+      {state.status === 'loading' && <LoadingBuddy message={state.message} />}
+      {state.status === 'error' && (
+        <ErrorMessage error={state.error} onRetry={analysis.retry} onGoToKeySetup={goToKeySetup} />
+      )}
+    </>
+  );
+
+  const resultArea =
+    state.status === 'done' ? (
+      <>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <NoticeBanner />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => window.print()}>
+              인쇄하기 🖨️
+            </Button>
+            <Button variant="secondary" onClick={goHome}>
+              🏠 처음으로
+            </Button>
+          </div>
+        </div>
+        {state.analysis.kind === 'single' ? (
+          <SwotBoard result={state.analysis.result} />
+        ) : (
+          <CompareView result={state.analysis.result} />
+        )}
+        <SourceList sources={state.analysis.sources} />
+        <FollowUpChat
+          key={state.requestId}
+          apiKey={apiKey}
+          analysis={state.analysis}
+          useSearch={useSearch}
+          onGoToKeySetup={goToKeySetup}
+        />
+      </>
+    ) : null;
+
+  if (view === 'photo') {
+    return (
+      <Layout header={header}>
+        <Button variant="secondary" className="self-start" onClick={goHome}>
+          ← 처음 화면으로
+        </Button>
+        <PhotoUpload disabled={analysis.isLoading} onSubmit={analysis.analyzeStorePhoto} />
+        {statusArea}
+        {resultArea}
+      </Layout>
+    );
+  }
+
   return (
     <Layout header={header}>
       <SearchBox
@@ -105,10 +165,7 @@ export default function App() {
         onCompare={analysis.compareTwo}
       />
 
-      {state.status === 'loading' && <LoadingBuddy message={state.message} />}
-      {state.status === 'error' && (
-        <ErrorMessage error={state.error} onRetry={analysis.retry} onGoToKeySetup={goToKeySetup} />
-      )}
+      {statusArea}
       {state.status === 'unclear' && (
         <UnclearHelp
           intent={state.intent}
@@ -119,47 +176,31 @@ export default function App() {
         />
       )}
 
-      {state.status === 'done' ? (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <NoticeBanner />
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => window.print()}>
-                인쇄하기 🖨️
-              </Button>
-              <Button variant="secondary" onClick={goHome}>
-                🏠 처음으로
-              </Button>
-            </div>
-          </div>
-          {state.analysis.kind === 'single' ? (
-            <SwotBoard result={state.analysis.result} />
-          ) : (
-            <CompareView result={state.analysis.result} />
-          )}
-          <SourceList sources={state.analysis.sources} />
-          <FollowUpChat
-            key={state.requestId}
-            apiKey={apiKey}
-            analysis={state.analysis}
-            useSearch={useSearch}
-            onGoToKeySetup={goToKeySetup}
-          />
-        </>
-      ) : (
+      {resultArea ?? (
         <>
           <RecentList
             entries={history.entries}
             onOpen={(entry) => analysis.showSaved(entry.analysis)}
             onRemove={history.remove}
           />
-          <section className="flex flex-col items-start gap-2 rounded-3xl border-2 border-line bg-surface p-5">
-            <h2 className="text-xl font-extrabold">
-              <span aria-hidden="true">✍️ </span>내가 직접 채워 보기
-            </h2>
-            <p>AI에게 묻기 전에, 내가 먼저 4칸을 채워 볼까요? AI 선생님이 칭찬과 힌트를 줘요.</p>
-            <Button onClick={() => setView('practice')}>직접 채워 보러 가기</Button>
-          </section>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <section className="flex flex-col items-start gap-2 rounded-3xl border-2 border-line bg-surface p-5">
+              <h2 className="text-xl font-extrabold">
+                <span aria-hidden="true">📷 </span>가게 사진으로 알아보기
+              </h2>
+              <p>가게 사진을 한 장 넣으면, AI가 사진 속 단서를 찾아 4칸을 채워 줘요.</p>
+              <Button onClick={openPhoto} disabled={analysis.isLoading}>
+                사진 넣으러 가기
+              </Button>
+            </section>
+            <section className="flex flex-col items-start gap-2 rounded-3xl border-2 border-line bg-surface p-5">
+              <h2 className="text-xl font-extrabold">
+                <span aria-hidden="true">✍️ </span>내가 직접 채워 보기
+              </h2>
+              <p>AI에게 묻기 전에, 내가 먼저 4칸을 채워 볼까요? AI 선생님이 칭찬과 힌트를 줘요.</p>
+              <Button onClick={() => setView('practice')}>직접 채워 보러 가기</Button>
+            </section>
+          </div>
           <SwotIntroCard />
           <SwotGuide />
         </>

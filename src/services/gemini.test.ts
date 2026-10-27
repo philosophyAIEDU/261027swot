@@ -22,6 +22,7 @@ vi.mock('@google/genai', async (importOriginal) => {
 });
 
 const {
+  analyzePhoto,
   analyzeOne,
   analyzeTwo,
   askFollowUp,
@@ -29,6 +30,7 @@ const {
   detectIntent,
   FRIENDLY_MESSAGES,
   InvalidResponseError,
+  NotStoreError,
   toFriendlyError,
   verifyKey,
 } = await import('./gemini');
@@ -149,6 +151,65 @@ describe('analyzeOne / analyzeTwo: 검증과 재시도', () => {
     const analysis = await analyzeOne(KEY, '농심', { useSearch: true });
     expect(generateContent.mock.calls[0]?.[0].config.tools).toEqual([{ googleSearch: {} }]);
     expect(analysis.sources).toEqual([{ uri: 'https://example.com/a', title: '기사' }]);
+  });
+});
+
+describe('analyzePhoto: 가게 사진 분석', () => {
+  const photo = { imageBase64: 'BASE64DATA', mimeType: 'image/jpeg', storeName: '행복 떡볶이', note: '학교 앞이에요' };
+
+  function photoResponse() {
+    const base = makeSwot('행복 떡볶이');
+    return {
+      isStore: true,
+      reason: '',
+      ...base,
+      strengths: base.strengths.map((item) => ({ ...item, source: 'photo' })),
+      weaknesses: base.weaknesses.map((item) => ({ ...item, source: 'photo' })),
+      opportunities: base.opportunities.map((item) => ({ ...item, source: 'guess' })),
+      threats: base.threats.map((item) => ({ ...item, source: 'guess' })),
+      photoClues: ['메뉴판에 그림이 있어요.', '의자가 네 개 보여요.'],
+    };
+  }
+
+  it('사진과 지시문을 한 user 메시지에 담아 보낸다', async () => {
+    generateContent.mockResolvedValueOnce(jsonResponse(photoResponse()));
+    await analyzePhoto(KEY, photo);
+    const request = generateContent.mock.calls[0]?.[0];
+    expect(request.model).toBe(GEMINI_MODEL);
+    expect(request.contents).toHaveLength(1);
+    expect(request.contents[0].role).toBe('user');
+    expect(request.contents[0].parts[0]).toEqual({ inlineData: { data: 'BASE64DATA', mimeType: 'image/jpeg' } });
+    expect(request.contents[0].parts[1].text).toContain('행복 떡볶이');
+    expect(request.contents[0].parts[1].text).toContain('학교 앞이에요');
+    expect(request.config.responseMimeType).toBe('application/json');
+    expect(request.config).not.toHaveProperty('temperature');
+  });
+
+  it('결과에는 SWOT 칸과 사진 단서만 남기고 판별용 칸은 버린다', async () => {
+    generateContent.mockResolvedValueOnce(jsonResponse(photoResponse()));
+    const analysis = await analyzePhoto(KEY, photo);
+    expect(analysis.kind).toBe('single');
+    expect(analysis.result).not.toHaveProperty('isStore');
+    expect(analysis.result).not.toHaveProperty('reason');
+    if (analysis.kind !== 'single') throw new Error('single이어야 해요');
+    expect(analysis.result.photoClues).toHaveLength(2);
+    expect(analysis.result.opportunities[0]?.source).toBe('guess');
+  });
+
+  it('가게 사진이 아니면 NotStoreError → 친절한 안내', async () => {
+    generateContent.mockResolvedValueOnce(jsonResponse({ isStore: false, reason: '사람 사진이에요.' }));
+    const error = await analyzePhoto(KEY, photo).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(NotStoreError);
+    expect(toFriendlyError(error)).toEqual({ kind: 'notStore', message: FRIENDLY_MESSAGES.notStore });
+  });
+
+  it('근거 표시가 빠진 답이 오면 한 번 다시 묻는다', async () => {
+    const { strengths: _omit, ...partial } = photoResponse();
+    generateContent
+      .mockResolvedValueOnce(jsonResponse({ ...partial, strengths: makeSwot('x').strengths }))
+      .mockResolvedValueOnce(jsonResponse(photoResponse()));
+    await expect(analyzePhoto(KEY, photo)).resolves.toMatchObject({ kind: 'single' });
+    expect(generateContent).toHaveBeenCalledTimes(2);
   });
 });
 
