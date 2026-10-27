@@ -36,4 +36,28 @@ describe('SwotBoard', () => {
     expect(example).toBeVisible();
     expect(within(strengths).getByRole('button', { name: /접기/ })).toHaveAttribute('aria-expanded', 'true');
   });
+
+  it('사진 분석이면 사진 단서와 각 항목의 근거(본 것/짐작)를 보여 준다', () => {
+    const base = makeSwot('사진 속 분식집');
+    render(
+      <SwotBoard
+        result={{
+          ...base,
+          strengths: [{ ...base.strengths[0]!, source: 'photo' }],
+          opportunities: [{ ...base.opportunities[0]!, source: 'guess' }],
+          photoClues: ['메뉴판에 그림이 있어요.'],
+        }}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: /사진에서 찾은 단서/ })).toBeInTheDocument();
+    expect(screen.getByText('메뉴판에 그림이 있어요.')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'S 잘하는 점' })).getByText('사진에서 봤어요')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'O 기회' })).getByText('짐작이에요')).toBeInTheDocument();
+  });
+
+  it('글로 분석한 결과에는 사진 단서와 근거 표시가 없다', () => {
+    render(<SwotBoard result={makeSwot('농심')} />);
+    expect(screen.queryByText(/사진에서 찾은 단서/)).not.toBeInTheDocument();
+    expect(screen.queryByText('짐작이에요')).not.toBeInTheDocument();
+  });
 });

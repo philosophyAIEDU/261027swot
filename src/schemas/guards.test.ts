@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import introExample from '../data/introExample.json';
 import { makeCompare, makeSwot } from '../test/fixtures';
-import { isCompareResult, isPracticeFeedback, isRawIntent, isSwotResult } from './guards';
+import { isCompareResult, isPhotoResponse, isPracticeFeedback, isRawIntent, isSwotResult } from './guards';
 
 describe('isSwotResult', () => {
   it('올바른 JSON은 통과한다', () => {
@@ -55,5 +55,46 @@ describe('isRawIntent / isPracticeFeedback', () => {
   it('피드백 모양을 검사한다', () => {
     expect(isPracticeFeedback({ praise: '잘했어요', hint: '밖의 일도 써 볼까요?' })).toBe(true);
     expect(isPracticeFeedback({ praise: '잘했어요' })).toBe(false);
+  });
+});
+
+describe('사진 분석 결과', () => {
+  function photoResult() {
+    const base = makeSwot('사진 속 분식집');
+    const tag = (source: 'photo' | 'guess') => (item: { point: string; example: string }) => ({ ...item, source });
+    return {
+      ...base,
+      isStore: true as const,
+      reason: '',
+      strengths: base.strengths.map(tag('photo')),
+      weaknesses: base.weaknesses.map(tag('photo')),
+      opportunities: base.opportunities.map(tag('guess')),
+      threats: base.threats.map(tag('guess')),
+      photoClues: ['메뉴판에 그림이 있어요.', '의자가 네 개 보여요.'],
+    };
+  }
+
+  it('근거와 단서가 있는 SWOT 결과도 isSwotResult를 통과한다', () => {
+    expect(isSwotResult(photoResult())).toBe(true);
+  });
+
+  it('근거(source) 값이 틀리면 거부한다', () => {
+    const bad = photoResult();
+    expect(isSwotResult({ ...bad, strengths: [{ ...bad.strengths[0], source: 'maybe' }] })).toBe(false);
+  });
+
+  it('isPhotoResponse: 올바른 결과는 통과한다', () => {
+    expect(isPhotoResponse(photoResult())).toBe(true);
+  });
+
+  it('isPhotoResponse: 가게 사진이 아니면 이유만 있어도 통과한다', () => {
+    expect(isPhotoResponse({ isStore: false, reason: '사람 사진이에요.' })).toBe(true);
+  });
+
+  it('isPhotoResponse: 근거 표시가 빠진 항목이나 단서가 없으면 거부한다', () => {
+    const noSource = photoResult();
+    expect(isPhotoResponse({ ...noSource, threats: makeSwot('x').threats })).toBe(false);
+    expect(isPhotoResponse({ ...photoResult(), photoClues: [] })).toBe(false);
+    expect(isPhotoResponse({ ...photoResult(), photoClues: undefined })).toBe(false);
   });
 });

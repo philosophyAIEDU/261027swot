@@ -64,6 +64,13 @@ npm run test    # 자동 테스트 실행 (실제 AI는 부르지 않아요)
 - **활동지로 인쇄**: 결과 화면의 **인쇄하기 🖨️**를 누르면 SWOT 4칸이 A4 한 장에 나와요. 접혀 있던 "예를 들면?" 예시도 인쇄에는 모두 들어가요.
   비교 결과는 회사 A, 회사 B, 비교표가 각각 한 장씩 나와요.
 - **더 물어보기**: 결과 아래 추천 질문 버튼을 누르거나 직접 질문(300자까지)을 써요.
+- **가게 사진으로 알아보기 📷**: 홈 화면의 "사진 넣으러 가기"에서 동네 가게 사진을 한 장 넣으면 AI가 사진 속 단서를 찾아 4칸을 채워요.
+  - 각 항목에 **📷 사진에서 봤어요 / 💭 짐작이에요**가 표시돼요. 기회·조심할 점은 사진에 잘 안 보여서 대부분 짐작이에요. "짐작한 내용을 직접 가서 확인해 보기"를 활동으로 이어 가면 좋아요.
+  - 가게 이름과 주변 메모(예: 학교 앞, 근처에 공원)를 함께 쓰면 더 정확해져요.
+  - 태블릿·휴대폰에서는 "카메라로 찍기" 버튼이 나와요.
+  - 사진은 브라우저에서 작게 줄이고, 사진 속 위치(GPS) 정보를 지운 뒤 AI에게만 보내요. 앱에는 사진을 저장하지 않아요(최근 기록에도 결과만 남아요).
+  - 학생들에게 "사람 얼굴·차 번호판·전화번호가 나오지 않게, 가게 안은 사장님께 여쭤보고 찍기"를 꼭 안내해 주세요.
+  - 이 기능은 사진을 읽을 수 있는 모델이 필요해요. 기본 모델(`gemini-3.5-flash-lite`)로 사진 분석이 안 되면 `src/config.ts`에서 모델을 바꿔 주세요.
 - **최신 정보**: "Google 검색으로 최신 정보도 찾아보기"를 켜면 AI가 검색을 참고하고, 참고한 웹 페이지 링크를 보여 줘요.
 - 최근 분석한 회사 5개는 이 기기에 저장돼 홈 화면에서 다시 볼 수 있어요(키는 저장하지 않아요).
 - 화면 위 **가− / 가+**로 글자 크기를, ☀️/🌙로 어두운 화면을 바꿀 수 있어요.
@@ -97,7 +104,8 @@ export const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 - React 19 + TypeScript(strict) + Vite + Tailwind CSS 4, AI SDK는 `@google/genai`.
 - 폴더 구조
-  - `src/services/gemini.ts` — 모든 Gemini 호출(`detectIntent`, `analyzeOne`, `analyzeTwo`, `askFollowUp`, `verifyKey`, `coachPractice`)과 오류 메시지 변환
+  - `src/services/gemini.ts` — 모든 Gemini 호출(`detectIntent`, `analyzeOne`, `analyzeTwo`, `analyzePhoto`, `askFollowUp`, `verifyKey`, `coachPractice`)과 오류 메시지 변환
+  - `src/features/photo/` — 사진 고르기 화면과 브라우저 안 사진 손질(1024px로 줄이기, EXIF 제거)
   - `src/services/apiKeyStore.ts` — 키 저장/조회/삭제(sessionStorage 기본, "기억하기"일 때만 localStorage)
   - `src/prompts/` — AI 지시문(공통 규칙, SWOT, 비교, 대화, 판별, 직접 채우기)
   - `src/schemas/` — 응답 JSON 스키마와 런타임 타입 가드

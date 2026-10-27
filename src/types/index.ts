@@ -6,9 +6,14 @@ export type IntentResult =
 /** 왜 분석할 수 없는지: 3개 이상 / 실제 사람 / 회사가 아님 / 알 수 없음 */
 export type UnclearKind = 'tooMany' | 'person' | 'notCompany' | 'unknown';
 
+/** 사진 분석에서 이 항목의 근거: 사진에서 직접 본 것인지, 짐작한 것인지 */
+export type ItemSource = 'photo' | 'guess';
+
 export interface SwotItem {
   point: string;
   example: string;
+  /** 사진 분석일 때만 있다. */
+  source?: ItemSource;
 }
 
 export interface HardWord {
@@ -25,6 +30,8 @@ export interface SwotResult {
   threats: SwotItem[];
   summary: string;
   hardWords: HardWord[];
+  /** 사진 분석일 때만 있다: AI가 사진에서 찾은 단서 */
+  photoClues?: string[];
 }
 
 export interface DifferentThing {
@@ -58,7 +65,7 @@ export type Analysis =
   | { kind: 'single'; result: SwotResult; sources: Source[] }
   | { kind: 'compare'; result: CompareResult; sources: Source[] };
 
-export type FriendlyErrorKind = 'badKey' | 'rateLimit' | 'network' | 'invalidResponse';
+export type FriendlyErrorKind = 'badKey' | 'rateLimit' | 'network' | 'invalidResponse' | 'notStore';
 
 export interface FriendlyError {
   kind: FriendlyErrorKind;
@@ -79,4 +86,12 @@ export interface PracticeInput {
 export interface PracticeFeedback {
   praise: string;
   hint: string;
+}
+
+/** 가게 사진 분석에 보낼 내용. 사진은 브라우저에서 줄인 JPEG(base64)다. */
+export interface PhotoInput {
+  imageBase64: string;
+  mimeType: string;
+  storeName: string;
+  note: string;
 }

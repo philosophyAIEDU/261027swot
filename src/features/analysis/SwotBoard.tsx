@@ -3,7 +3,7 @@ import type { SwotResult } from '../../types';
 import { HardWordsBox } from './HardWordsBox';
 import { QUADRANTS } from './quadrantMeta';
 import { ScopeLegend } from './ScopeLegend';
-import { SwotQuadrant } from './SwotQuadrant';
+import { SOURCE_BADGES, SwotQuadrant } from './SwotQuadrant';
 
 interface SwotBoardProps {
   result: SwotResult;
@@ -24,6 +24,24 @@ export function SwotBoard({ result, compact = false, label }: SwotBoardProps) {
         </h2>
         <p className="text-lg whitespace-pre-wrap">{result.oneLineIntro}</p>
       </header>
+      {result.photoClues && result.photoClues.length > 0 && (
+        <section className="print-avoid-break flex flex-col gap-2 rounded-3xl border-2 border-line bg-surface p-4">
+          <h3 className="text-lg font-extrabold">
+            <span aria-hidden="true">🔎 </span>사진에서 찾은 단서
+          </h3>
+          <ul className="ml-5 list-disc">
+            {result.photoClues.map((clue) => (
+              <li key={clue} className="whitespace-pre-wrap">
+                {clue}
+              </li>
+            ))}
+          </ul>
+          <p className="text-ink-soft">
+            각 칸의 {SOURCE_BADGES.photo.emoji} 표시는 &apos;{SOURCE_BADGES.photo.label}&apos;, {SOURCE_BADGES.guess.emoji} 표시는
+            &apos;{SOURCE_BADGES.guess.label}&apos;라는 뜻이에요. 짐작한 내용은 직접 가서 확인해 봐요!
+          </p>
+        </section>
+      )}
       <ScopeLegend />
       <div className={`grid grid-cols-1 gap-3 print:grid-cols-2 print:gap-2 ${compact ? '' : 'md:grid-cols-2'}`}>
         {QUADRANTS.map((meta) => (

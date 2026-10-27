@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import type { SwotItem } from '../../types';
+import type { ItemSource, SwotItem } from '../../types';
 import { SCOPE_LABELS, type QuadrantMeta } from './quadrantMeta';
 
 interface SwotQuadrantProps {
@@ -15,6 +15,11 @@ interface ItemRowProps {
   alwaysShowExample: boolean;
 }
 
+export const SOURCE_BADGES: Record<ItemSource, { emoji: string; label: string }> = {
+  photo: { emoji: '📷', label: '사진에서 봤어요' },
+  guess: { emoji: '💭', label: '짐작이에요' },
+};
+
 function ItemRow({ item, alwaysShowExample }: ItemRowProps) {
   const [open, setOpen] = useState(false);
   const exampleId = useId();
@@ -23,6 +28,12 @@ function ItemRow({ item, alwaysShowExample }: ItemRowProps) {
   return (
     <li className="flex flex-col gap-1 rounded-2xl bg-surface/70 p-3">
       <p className="font-bold">{item.point}</p>
+      {item.source && (
+        <span className="self-start rounded-full border-2 border-dashed border-current px-2 text-sm font-bold">
+          <span aria-hidden="true">{SOURCE_BADGES[item.source].emoji} </span>
+          {SOURCE_BADGES[item.source].label}
+        </span>
+      )}
       {!alwaysShowExample && (
         <button
           type="button"
