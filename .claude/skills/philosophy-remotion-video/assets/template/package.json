@@ -1,0 +1,31 @@
+{
+  "name": "philosophy-remotion-video",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "필로소피 AI 교육 파스텔 톤 Remotion 영상",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "bash scripts/render-chunks.sh out/video.mp4",
+    "render:once": "remotion render Main out/video.mp4",
+    "render:preview": "remotion render Main out/preview.mp4 --scale=0.5",
+    "render:subtitles": "bash scripts/render-chunks.sh out/video-subtitles.mp4 Main --props='{\"showSubtitles\":true}'",
+    "still": "remotion still Main out/still.png",
+    "media": "python3 scripts/media-sizes.py",
+    "script": "node scripts/export-script.ts",
+    "typecheck": "tsc --noEmit",
+    "stills": "node scripts/stills.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/media-utils": "4.0.539",
+    "@remotion/transitions": "4.0.539",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}
