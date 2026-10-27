@@ -1,0 +1,28 @@
+{
+  "name": "ai-assignment-video",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "AI 시대의 과제, 실제로 해 보기 — 후속 영상 (Remotion)",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render AiAssignment out/ai-assignment.mp4",
+    "render:preview": "remotion render AiAssignment out/preview.mp4 --scale=0.5",
+    "still": "remotion still AiAssignment out/still.png",
+    "typecheck": "tsc --noEmit",
+    "script": "node scripts/export-script.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.539",
+    "@remotion/google-fonts": "^4.0.539",
+    "@remotion/media-utils": "^4.0.539",
+    "@remotion/transitions": "^4.0.539",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.539"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^5.9.3"
+  }
+}
