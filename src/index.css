@@ -1,0 +1,154 @@
+@import 'tailwindcss';
+
+/* 색은 모두 이름 붙은 토큰으로 쓰고, 다크 모드에서는 토큰 값만 바꾼다.
+   모든 글자/배경 조합은 WCAG AA(4.5:1) 이상이 되도록 골랐다. */
+@theme {
+  --font-sans: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
+
+  --color-page: #fdfaf3;
+  --color-surface: #ffffff;
+  --color-ink: #1f2937;
+  --color-ink-soft: #4b5563;
+  --color-line: #cbd5e1;
+  --color-brand: #1d4ed8;
+  --color-brand-hover: #1e40af;
+  --color-brand-ink: #ffffff;
+  --color-brand-soft: #eff6ff;
+  --color-focus: #f59e0b;
+
+  --color-s-bg: #dbeafe;
+  --color-s-line: #2563eb;
+  --color-s-ink: #1e3a8a;
+  --color-w-bg: #e0e7ff;
+  --color-w-line: #4f46e5;
+  --color-w-ink: #312e81;
+  --color-o-bg: #dcfce7;
+  --color-o-line: #16a34a;
+  --color-o-ink: #14532d;
+  --color-t-bg: #ffedd5;
+  --color-t-line: #ea580c;
+  --color-t-ink: #7c2d12;
+
+  --color-inside: #1e40af;
+  --color-outside: #166534;
+
+  --color-danger-bg: #fef2f2;
+  --color-danger-ink: #991b1b;
+  --color-notice-bg: #fef9c3;
+  --color-notice-ink: #713f12;
+
+  --animate-wiggle: wiggle 1.2s ease-in-out infinite;
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-8deg) translateY(0); }
+    50% { transform: rotate(8deg) translateY(-6px); }
+  }
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 인쇄할 때는 항상 밝은 색을 쓰도록 다크 모드 값은 화면에만 적용한다. */
+@media screen {
+  .dark {
+    --color-page: #0f172a;
+    --color-surface: #1e293b;
+    --color-ink: #f1f5f9;
+    --color-ink-soft: #cbd5e1;
+    --color-line: #475569;
+    --color-brand: #93c5fd;
+    --color-brand-hover: #bfdbfe;
+    --color-brand-ink: #0f172a;
+    --color-brand-soft: #1e3a8a;
+
+    --color-s-bg: #172554;
+    --color-s-line: #60a5fa;
+    --color-s-ink: #dbeafe;
+    --color-w-bg: #1e1b4b;
+    --color-w-line: #818cf8;
+    --color-w-ink: #e0e7ff;
+    --color-o-bg: #052e16;
+    --color-o-line: #4ade80;
+    --color-o-ink: #dcfce7;
+    --color-t-bg: #431407;
+    --color-t-line: #fb923c;
+    --color-t-ink: #ffedd5;
+
+    --color-inside: #93c5fd;
+    --color-outside: #86efac;
+
+    --color-danger-bg: #450a0a;
+    --color-danger-ink: #fecaca;
+    --color-notice-bg: #422006;
+    --color-notice-ink: #fef08a;
+    color-scheme: dark;
+  }
+}
+
+/* 글자 크기 단계: 기본 18px(112.5%)에서 시작한다. rem 단위가 모두 따라 커진다. */
+html {
+  font-size: 112.5%;
+}
+html[data-font-size='large'] {
+  font-size: 125%;
+}
+html[data-font-size='xlarge'] {
+  font-size: 137.5%;
+}
+
+body {
+  background-color: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 수업 활동지용: SWOT 4칸이 A4 한 장에 들어가도록 여백과 글자를 줄인다. */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+@media print {
+  html,
+  html[data-font-size='large'],
+  html[data-font-size='xlarge'] {
+    font-size: 11pt;
+  }
+  body {
+    background: #ffffff;
+  }
+  .print-page {
+    break-after: page;
+  }
+  .print-page:last-child {
+    break-after: auto;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+}
+
+/* 화면에서는 hidden으로 접어 둔 예시·탭도 활동지에는 모두 나오게 한다.
+   Tailwind의 [hidden] 규칙(!important)이 base 레이어에 있어서, 같은 레이어에 두어야 이길 수 있다. */
+@layer base {
+  @media print {
+    .print-reveal[hidden] {
+      display: block !important;
+    }
+  }
+}
