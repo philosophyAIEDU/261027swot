@@ -16,6 +16,7 @@ import { useApiKey } from './features/apiKey/useApiKey';
 import { FollowUpChat } from './features/chat/FollowUpChat';
 import { RecentList } from './features/history/RecentList';
 import { useHistory } from './features/history/useHistory';
+import { SwotGuide } from './features/intro/SwotGuide';
 import { SwotIntroCard } from './features/intro/SwotIntroCard';
 import { PracticeBoard } from './features/practice/PracticeBoard';
 import { usePreferences } from './hooks/usePreferences';
@@ -71,7 +72,12 @@ export default function App() {
           onCancel={apiKey ? () => setView('home') : undefined}
           initialRemember={remembered}
         />
-        {!apiKey && <SwotIntroCard />}
+        {!apiKey && (
+          <>
+            <SwotIntroCard />
+            <SwotGuide />
+          </>
+        )}
       </Layout>
     );
   }
@@ -155,6 +161,7 @@ export default function App() {
             <Button onClick={() => setView('practice')}>직접 채워 보러 가기</Button>
           </section>
           <SwotIntroCard />
+          <SwotGuide />
         </>
       )}
     </Layout>
