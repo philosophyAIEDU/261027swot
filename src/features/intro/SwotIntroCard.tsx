@@ -2,6 +2,7 @@ import introExample from '../../data/introExample.json';
 import { QUADRANTS } from '../analysis/quadrantMeta';
 import { ScopeLegend } from '../analysis/ScopeLegend';
 import { SwotQuadrant } from '../analysis/SwotQuadrant';
+import { GUIDE_ID } from './SwotGuide';
 import type { SwotResult } from '../../types';
 
 // 예시는 AI를 부르지 않는 정적 데이터다. 키가 없어도, 인터넷이 느려도 바로 보인다.
@@ -29,6 +30,12 @@ export function SwotIntroCard() {
         ))}
       </ul>
       <ScopeLegend />
+      <p>
+        <a href={`#${GUIDE_ID}`} className="font-bold text-brand underline underline-offset-4">
+          SWOT를 하는 방법과 장점·단점까지 알아보기
+        </a>
+        <span aria-hidden="true"> 👇</span>
+      </p>
 
       <h3 className="mt-2 text-xl font-extrabold">
         예시: {example.company} <span aria-hidden="true">🍢</span>
