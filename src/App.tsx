@@ -13,6 +13,7 @@ import { UnclearHelp } from './features/analysis/UnclearHelp';
 import { useSwotAnalysis } from './features/analysis/useSwotAnalysis';
 import { ApiKeySetup } from './features/apiKey/ApiKeySetup';
 import { useApiKey } from './features/apiKey/useApiKey';
+import { FamousExamples } from './features/examples/FamousExamples';
 import { FollowUpChat } from './features/chat/FollowUpChat';
 import { RecentList } from './features/history/RecentList';
 import { useHistory } from './features/history/useHistory';
@@ -21,6 +22,7 @@ import { SwotIntroCard } from './features/intro/SwotIntroCard';
 import { PhotoUpload } from './features/photo/PhotoUpload';
 import { PracticeBoard } from './features/practice/PracticeBoard';
 import { usePreferences } from './hooks/usePreferences';
+import type { SwotResult } from './types';
 
 type View = 'home' | 'keySetup' | 'practice' | 'photo';
 
@@ -38,6 +40,17 @@ export default function App() {
   }, [analysis]);
 
   const goToKeySetup = useCallback(() => setView('keySetup'), []);
+
+  // 예시는 저장된 기록처럼 바로 결과 화면에 띄운다(AI 호출 없음, 최근 기록에도 넣지 않음).
+  // 아래쪽 목록에서 눌렀으므로 결과가 보이는 맨 위로 올리고, 키보드 사용자를 위해 본문에 초점을 둔다.
+  const openExample = useCallback(
+    (result: SwotResult) => {
+      analysis.showSaved({ kind: 'single', result, sources: [] });
+      window.scrollTo({ top: 0 });
+      document.getElementById('main')?.focus();
+    },
+    [analysis],
+  );
 
   // 사진 화면으로 갈 때는 글로 찾던 결과를 지워, 사진 결과와 섞여 보이지 않게 한다.
   const openPhoto = useCallback(() => {
@@ -183,6 +196,7 @@ export default function App() {
             onOpen={(entry) => analysis.showSaved(entry.analysis)}
             onRemove={history.remove}
           />
+          <FamousExamples onOpen={openExample} />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <section className="flex flex-col items-start gap-2 rounded-3xl border-2 border-line bg-surface p-5">
               <h2 className="text-xl font-extrabold">
